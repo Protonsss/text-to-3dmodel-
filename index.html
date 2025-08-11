@@ -1,0 +1,320 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Prompt → 3D • Protonsss</title>
+  <style>
+      :root{
+        --bg:#0b0f14; --fg:#e6eef7; --muted:#a9b4c1; --chip:#111923; --outline:rgba(255,255,255,.10);
+        --primary:#7bb7ff; --secondary:#a78bfa; --danger:#ff7b7b; --ok:#00d68f; --warn:#ffb020;
+        --shadow: 0 10px 30px rgba(0,0,0,.35);
+      }
+      :root.light{
+        --bg:#f6f7fb; --fg:#121722; --muted:#586173; --chip:#ffffff; --outline:rgba(0,0,0,.08);
+        --shadow: 0 10px 28px rgba(0,0,0,.12);
+      }
+      *{box-sizing:border-box}
+      html,body{height:100%}
+      body{
+        margin:0; color:var(--fg);
+        font:15px/1.5 system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif;
+        background: radial-gradient(1200px 800px at 120% -10%, rgba(167,139,250,.14), transparent 55%),
+                    radial-gradient(900px 700px at -15% 120%, rgba(125,211,252,.12), transparent 60%), var(--bg);
+      }
+      /* subtle star field */
+      .bg{
+        position:fixed; inset:0; pointer-events:none; z-index:-1;
+      }
+      .bg::before, .bg::after{
+        content:""; position:absolute; inset:0;
+        background-image:
+          radial-gradient(1px 1px at 10% 20%, rgba(255,255,255,.45), transparent 60%),
+          radial-gradient(1px 1px at 35% 80%, rgba(255,255,255,.35), transparent 60%),
+          radial-gradient(1px 1px at 70% 10%, rgba(255,255,255,.40), transparent 60%),
+          radial-gradient(1px 1px at 85% 60%, rgba(255,255,255,.30), transparent 60%),
+          radial-gradient(1px 1px at 50% 50%, rgba(255,255,255,.25), transparent 60%);
+        opacity:.6; filter: drop-shadow(0 0 2px rgba(255,255,255,.25));
+        animation: twinkle 8s linear infinite;
+      }
+      .bg::after{ animation-duration: 13s; opacity:.5 }
+      @keyframes twinkle{ 50%{ opacity:.35 } }
+
+      .wrap{max-width:1080px;margin:0 auto;padding:18px 16px 28px}
+
+      header.mast{
+        display:flex; align-items:center; gap:14px;
+        border:1px solid var(--outline); border-radius:16px; padding:10px 12px;
+        background: linear-gradient(135deg, rgba(20,26,36,.75), rgba(15,21,30,.55));
+        backdrop-filter: blur(12px) saturate(140%); box-shadow: var(--shadow);
+        position:sticky; top:10px; z-index:2;
+      }
+      .brand{display:flex; align-items:center; gap:10px}
+      .logo{width:26px; height:26px; display:block}
+      header h1{font-size:15px; letter-spacing:.3px; margin:0}
+      .madeby{color:var(--muted)}
+      .spacer{flex:1}
+
+      .status.chip{display:flex; align-items:center; gap:8px}
+      .dot{width:10px; height:10px; border-radius:50%; background:#888; box-shadow:0 0 0 4px rgba(255,255,255,.06)}
+      .dot.ok{ background: var(--ok) }
+      .dot.warn{ background: var(--warn) }
+      .dot.bad{ background: var(--danger) }
+
+      .chip{
+        background: var(--chip); color: var(--fg);
+        border:1px solid var(--outline); border-radius:12px; padding:8px 10px; font-size:12px;
+      }
+      #themeBtn{ cursor:pointer; transition: transform .08s ease }
+      #themeBtn:active{ transform: scale(.96) }
+
+      .toolbar{ display:flex; align-items:center; gap:10px; margin-top:12px }
+      .pills{ display:flex; flex-wrap:wrap; gap:8px }
+      .pill{
+        border:1px solid var(--outline); background:linear-gradient(180deg, rgba(255,255,255,.06), rgba(255,255,255,0));
+        color:var(--fg); padding:8px 10px; border-radius:999px; font-size:12px; cursor:pointer;
+        transition: transform .07s ease, border-color .2s ease;
+      }
+      .pill:hover{ transform: translateY(-1px); border-color: rgba(255,255,255,.22) }
+
+      .chat{height:calc(100dvh - 240px); min-height:300px; overflow:auto; margin-top:14px; padding-right:4px}
+      .msg{display:flex; gap:10px; margin:10px 0}
+      .msg .avatar{width:26px; height:26px; display:grid; place-items:center; color:var(--muted)}
+      .bubble{
+        flex:1; background: var(--chip); border:1px solid var(--outline);
+        padding:12px 14px; border-radius:14px; box-shadow: var(--shadow);
+        backdrop-filter: blur(10px) saturate(140%);
+      }
+
+      .composer{
+        display:flex; gap:10px; position:sticky; bottom:8px; margin-top:14px;
+        border-radius:14px; padding:8px; background: linear-gradient(180deg, rgba(255,255,255,.06), rgba(255,255,255,.01));
+        border:1px solid var(--outline); box-shadow: var(--shadow);
+      }
+      .composer input{
+        flex:1; border:1px solid var(--outline); border-radius:12px; background:rgba(255,255,255,.06);
+        color:var(--fg); padding:12px 14px; outline:none;
+      }
+      .composer button{
+        border:1px solid var(--outline); background: linear-gradient(90deg, var(--primary), var(--secondary));
+        color:#0b0f14; border-radius:12px; padding:12px 14px; cursor:pointer; font-weight:600;
+        transition: transform .08s ease; box-shadow: 0 6px 20px rgba(124,178,255,.35);
+      }
+      .composer button:active{ transform: translateY(1px) }
+      .hint{ color: var(--muted); font-size: 12px; margin-top:6px }
+
+      .viewer{ position:relative; margin:6px 0 }
+      .viewer canvas{
+        width:100%; height:420px; display:block; border-radius:12px; border:1px solid var(--outline); background:#0f1318;
+        box-shadow: var(--shadow);
+      }
+      .viewer .overlay{
+        position:absolute; left:10px; top:10px;
+        background:rgba(12,18,24,.6); border:1px solid var(--outline); backdrop-filter: blur(8px);
+        padding:6px 8px; border-radius:8px; color:var(--muted); font-size:12px
+      }
+
+      .progress{height:6px; background:rgba(255,255,255,.06); border-radius:999px; margin-top:8px; overflow:hidden; border:1px solid var(--outline)}
+      .progress > span{display:block; height:100%; width:20%; background:linear-gradient(90deg, var(--primary), var(--secondary)); border-radius:inherit}
+
+      .spinner{ display:inline-block; width:14px; height:14px; border:2px solid rgba(255,255,255,.25); border-top-color:#fff; border-radius:50%; animation:spin 1s linear infinite; margin-right:6px }
+      @keyframes spin{ to{ transform:rotate(360deg) } }
+  </style>
+</head>
+<body>
+  <div class="bg" aria-hidden="true"></div>
+  <div class="wrap">
+    <header class="mast">
+      <div class="brand">
+        <svg class="logo" viewBox="0 0 64 64" aria-hidden="true">
+          <defs>
+            <linearGradient id="g1" x1="0" y1="0" x2="1" y2="1">
+              <stop offset="0" stop-color="#7bb7ff"/><stop offset="1" stop-color="#a78bfa"/>
+            </linearGradient>
+          </defs>
+          <!-- planet -->
+          <circle cx="32" cy="32" r="12" fill="url(#g1)"/>
+          <!-- ring -->
+          <ellipse cx="32" cy="36" rx="22" ry="8" fill="none" stroke="url(#g1)" stroke-width="3"/>
+          <ellipse cx="32" cy="36" rx="22" ry="8" fill="none" stroke="rgba(0,0,0,.35)" stroke-width="2" transform="translate(0,1)"/>
+        </svg>
+        <h1>Prompt → 3D</h1>
+      </div>
+      <div class="madeby chip">by <a href="https://github.com/Protonsss" target="_blank" rel="noopener">Protonsss</a></div>
+      <div class="spacer"></div>
+      <div class="status chip" id="apiStatus"><span id="apiDot" class="dot"></span><span id="apiLabel">Checking API…</span></div>
+      <button id="themeBtn" class="chip" aria-pressed="false">Theme</button>
+    </header>
+    <div class="toolbar">
+      <div class="pills" id="presets">
+        <button class="pill" data-preset="ceramic coffee cup with whipped cream and chocolate chips on a saucer">Coffee Cup</button>
+        <button class="pill" data-preset="sleek sci‑fi helmet, glossy white with blue visor">Sci‑Fi Helmet</button>
+        <button class="pill" data-preset="cute friendly robot with rounded edges, matte plastic">Cute Robot</button>
+        <button class="pill" data-preset="modern wooden chair, oak, minimal">Wooden Chair</button>
+      </div>
+    </div>
+
+    <div id="chat" class="chat"></div>
+
+    <div class="composer">
+      <input id="prompt" placeholder="e.g. Ceramic coffee cup with whipped cream and chocolate chips, on a saucer" />
+      <button id="genBtn">Generate</button>
+    </div>
+  </div>
+
+  <script type="importmap">
+  {
+    "imports": {
+      "three": "./node_modules/three/build/three.module.js",
+      "three/addons/": "./node_modules/three/examples/jsm/"
+    }
+  }
+  </script>
+
+  <script type="module">
+import * as THREE from 'three';
+import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
+console.log('[BOOT] module loaded, THREE?', !!THREE);
+console.log('[BOOT] Three REV', THREE.REVISION);
+
+function init(){
+  // diagnostics
+  window.addEventListener('error', e => console.error('[window error]', e.message, e.filename+':'+e.lineno));
+  window.addEventListener('unhandledrejection', e => console.error('[promise rejection]', e.reason));
+  console.log('[BOOT] Three REV', THREE.REVISION);
+
+  // DOM wiring
+  const API_BASE = 'http://localhost:3000';
+  const chat = document.getElementById('chat');
+  const input = document.getElementById('prompt');
+  const btn = document.getElementById('genBtn');
+  const themeBtn = document.getElementById('themeBtn');
+
+  const apiDot = document.getElementById('apiDot');
+  const apiLabel = document.getElementById('apiLabel');
+  const presets = document.getElementById('presets');
+
+  // API health ping
+  async function pingHealth(){
+    try{
+      const r = await fetch(`${API_BASE}/api/health`);
+      const j = await r.json();
+      const ok = r.ok && j && j.ok;
+      apiDot.className = 'dot ' + (ok ? 'ok' : 'bad');
+      apiLabel.textContent = ok ? 'API online' : 'API offline';
+    }catch(e){
+      apiDot.className = 'dot bad'; apiLabel.textContent = 'API offline';
+    }
+  }
+  pingHealth(); setInterval(pingHealth, 30000);
+
+  // Preset chips -> fill input
+  if (presets){
+    presets.addEventListener('click', (e)=>{
+      const b = e.target.closest('[data-preset]'); if(!b) return;
+      input.value = b.getAttribute('data-preset'); input.focus();
+    });
+  }
+
+  const root = document.documentElement;
+  const saved = localStorage.getItem('t2d-theme');
+  if (saved === 'light') root.classList.add('light');
+  if (themeBtn) {
+    themeBtn.addEventListener('click', () => {
+      const isLight = root.classList.toggle('light');
+      localStorage.setItem('t2d-theme', isLight ? 'light' : 'dark');
+      themeBtn.setAttribute('aria-pressed', String(isLight));
+    });
+  }
+
+  const svgUser = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor"><circle cx="12" cy="8" r="4"/><path d="M4 20c2.5-4 13.5-4 16 0"/></svg>';
+  const svgBot  = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor"><rect x="3" y="6" width="18" height="12" rx="3"/><circle cx="9" cy="12" r="1.2"/><circle cx="15" cy="12" r="1.2"/></svg>';
+
+  function addMsg(role, html){
+    const el = document.createElement('div'); el.className = 'msg '+role;
+    el.innerHTML = `<div class="avatar">${role==='user'?svgUser:svgBot}</div><div class="bubble">${html}</div>`;
+    chat.appendChild(el); chat.scrollTop = chat.scrollHeight; return el.querySelector('.bubble');
+  }
+  function setHTML(node, html){ node.innerHTML = html; chat.scrollTop = chat.scrollHeight; }
+
+  function addViewerCard(){
+    const wrap = document.createElement('div'); wrap.className = 'viewer';
+    wrap.innerHTML = '<div class="overlay">Drag to orbit · Scroll to zoom · Right‑drag to pan</div><canvas></canvas>';
+    const el = document.createElement('div'); el.className='msg bot';
+    el.innerHTML = `<div class="avatar">${svgBot}</div><div class="bubble"></div>`;
+    el.querySelector('.bubble').appendChild(wrap); chat.appendChild(el); chat.scrollTop = chat.scrollHeight;
+    return wrap.querySelector('canvas');
+  }
+
+  function mountViewer(canvas, glbUrl){
+    const renderer = new THREE.WebGLRenderer({canvas, antialias:true});
+    renderer.setPixelRatio(Math.min(devicePixelRatio,2));
+    const scene = new THREE.Scene(); scene.background = new THREE.Color(0x0f1318);
+    const camera = new THREE.PerspectiveCamera(50, 1, 0.05, 100); camera.position.set(1.2, 0.9, 1.8);
+    const controls = new OrbitControls(camera, renderer.domElement); controls.enableDamping = true;
+    scene.add(new THREE.HemisphereLight(0xffffff, 0x223, 0.9));
+    const key = new THREE.DirectionalLight(0xffffff, 1.2); key.position.set(2,2,2); scene.add(key);
+
+    const loader = new GLTFLoader(); loader.setCrossOrigin('anonymous');
+    loader.load(glbUrl, (g)=>{
+      const root = g.scene; const box = new THREE.Box3().setFromObject(root);
+      const size = box.getSize(new THREE.Vector3()).length(); const center = box.getCenter(new THREE.Vector3());
+      root.position.sub(center); root.scale.setScalar(1/(size||1) * 1.8); scene.add(root);
+    }, undefined, (e)=>console.error('GLB load error', e));
+
+    const ro = new ResizeObserver(()=>{
+      const rect = canvas.getBoundingClientRect();
+      renderer.setSize(rect.width, rect.height, false);
+      camera.aspect = rect.width/rect.height; camera.updateProjectionMatrix();
+    }); ro.observe(canvas.parentElement);
+
+    renderer.setAnimationLoop(()=>{ controls.update(); renderer.render(scene, camera); });
+  }
+
+  async function createJob(prompt){
+    const r = await fetch(`${API_BASE}/api/generate`, { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({prompt}) });
+    const j = await r.json(); if(!r.ok) throw new Error(j.error||r.statusText); return j.id;
+  }
+  async function pollJob(id){
+    while(true){
+      const r = await fetch(`${API_BASE}/api/status?id=${encodeURIComponent(id)}`);
+      const s = await r.json(); if(s.error) throw new Error(s.error);
+      if(s.status === 'SUCCEEDED' && s.glb) return s.glb;
+      if(s.status === 'FAILED') throw new Error('Generation failed');
+      await new Promise(res=>setTimeout(res, 5000));
+    }
+  }
+
+  async function go(){
+    const prompt = input.value.trim(); if(!prompt) return;
+    input.value = ''; btn.disabled = true;
+    addMsg('user', prompt);
+    const prog = addMsg('bot', `<span class=spinner></span> Generating your 3D model…<div class=progress><span style="width:20%"></span></div><div class=meta>This can take 1–5 minutes</div>`);
+    try{
+      const id = await createJob(prompt);
+      let pct = 20; const bar = prog.querySelector('.progress > span');
+      const timer = setInterval(()=>{ pct = Math.min(95, pct + Math.random()*8); bar.style.width = pct+'%'; }, 1200);
+      const url = await pollJob(id); clearInterval(timer); bar.style.width = '100%';
+      setHTML(prog, `Model ready — loading viewer…`);
+      const canvas = addViewerCard();
+      mountViewer(canvas, url);
+    }catch(e){ setHTML(prog, `<span style="color:var(--danger)">Error:</span> ${e.message}`); }
+    finally{ btn.disabled = false; }
+  }
+
+  // wire events (guard against missing nodes)
+  if (!chat || !input || !btn) {
+    console.error('[DOM MISSING]', {chat, input, btn, themeBtn});
+    alert('UI wiring failed: missing elements. See console.');
+    return;
+  }
+  btn.addEventListener('click', go);
+  input.addEventListener('keydown', (e)=>{ if(e.key==='Enter') go(); });
+} // end init
+
+// Always wait for full load to ensure all nodes exist
+window.addEventListener('load', init, { once: true });
+  </script>
+</body>
+</html>
